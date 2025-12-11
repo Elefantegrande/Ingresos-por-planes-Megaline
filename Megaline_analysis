@@ -9,9 +9,6 @@
 # - Los archivos de datos NO se incluyen en este repositorio.
 # - Este código se presenta con fines de portafolio para mostrar
 #   razonamiento analítico, uso de pandas y estadística.
-#
-# Las visualizaciones generadas durante el análisis pueden
-# encontrarse en la carpeta /figures del repositorio.
 # ============================================================
 
 
@@ -125,26 +122,6 @@ monthly_usage['monthly_revenue'] = (
 )
 
 
-# ============================================================
-# VISUALIZACIONES (NO EJECUTADAS AQUÍ)
-# ============================================================
-# Las siguientes gráficas fueron generadas en TripleTen y
-# se encuentran guardadas como imágenes en la carpeta /figures:
-#
-# 1. figures/ingresos_por_plan.png
-#    Distribución de ingresos mensuales por plan
-#
-# 2. figures/minutos_por_plan.png
-#    Consumo de minutos mensuales por plan
-#
-# 3. figures/gb_por_plan.png
-#    Consumo de datos (GB) por plan
-#
-# 4. figures/mensajes_por_plan.png
-#    Cantidad de mensajes enviados por plan
-# ============================================================
-
-
 # -------------------------------
 # Análisis estadístico
 # -------------------------------
@@ -178,11 +155,6 @@ CONCLUSIÓN:
 El análisis muestra que el plan Ultimate genera ingresos mensuales
 promedio más altos en comparación con el plan Surf.
 
-El plan Surf presenta una mayor variabilidad en ingresos, impulsada
-por cargos adicionales por excedentes, mientras que Ultimate ofrece
-ingresos más estables y predecibles.
+El plan Surf presenta una mayor variabilidad en ingresos,
 
-Estos resultados pueden ayudar a Megaline a optimizar su estrategia
-comercial y de precios según el perfil de sus clientes.
-"""
 
