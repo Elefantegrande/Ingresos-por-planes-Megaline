@@ -1,40 +1,33 @@
 # ============================================================
 # ANÁLISIS DE INGRESOS POR PLANES – MEGALINE
-# Proyecto académico desarrollado en el entorno de TripleTen
+# Proyecto académico | TripleTen
+# Autor: Juan David Guerrero
 #
-# NOTA IMPORTANTE:
-# Este notebook fue ejecutado originalmente en la plataforma
-# de TripleTen, la cual provee los datasets internamente en la
-# ruta /datasets/.
+# IMPORTANTE:
+# - Este proyecto fue ejecutado originalmente en la plataforma
+#   TripleTen, donde los datasets están disponibles en /datasets/.
+# - Los archivos de datos NO se incluyen en este repositorio.
+# - Este código se presenta con fines de portafolio para mostrar
+#   razonamiento analítico, uso de pandas y estadística.
 #
-# Los archivos de datos NO están incluidos en este repositorio
-# por políticas de uso de datos académicos.
-#
-# El objetivo de este proyecto en GitHub es demostrar:
-# - Capacidad de análisis de datos
-# - Uso de pandas y visualización
-# - Aplicación de estadística
-# - Comunicación de conclusiones de negocio
+# Las visualizaciones generadas durante el análisis pueden
+# encontrarse en la carpeta /figures del repositorio.
 # ============================================================
+
 
 # -------------------------------
 # Importación de librerías
 # -------------------------------
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 from scipy import stats as st
 
-# Configuración visual
-sns.set_style("whitegrid")
-plt.rcParams['figure.figsize'] = (10, 6)
 
 # -------------------------------
-# Carga de los datos
+# Carga de datos (TripleTen)
 # -------------------------------
-# Los datasets se encuentran disponibles únicamente en el
-# entorno de TripleTen bajo la ruta /datasets/
+# Los siguientes archivos están disponibles únicamente
+# dentro del entorno de TripleTen.
 
 megaline_calls = pd.read_csv('/datasets/megaline_calls.csv')
 megaline_internet = pd.read_csv('/datasets/megaline_internet.csv')
@@ -42,14 +35,6 @@ megaline_messages = pd.read_csv('/datasets/megaline_messages.csv')
 megaline_plans = pd.read_csv('/datasets/megaline_plans.csv')
 megaline_users = pd.read_csv('/datasets/megaline_users.csv')
 
-# -------------------------------
-# Exploración inicial
-# -------------------------------
-print(megaline_calls.head())
-print(megaline_internet.head())
-print(megaline_messages.head())
-print(megaline_plans.head())
-print(megaline_users.head())
 
 # -------------------------------
 # Preparación de los datos
@@ -64,8 +49,9 @@ megaline_calls['month'] = megaline_calls['call_date'].dt.month
 megaline_messages['month'] = megaline_messages['message_date'].dt.month
 megaline_internet['month'] = megaline_internet['session_date'].dt.month
 
+
 # -------------------------------
-# Cálculo de métricas mensuales
+# Métricas mensuales por usuario
 # -------------------------------
 monthly_calls = (
     megaline_calls
@@ -88,25 +74,30 @@ monthly_internet = (
     .reset_index()
 )
 
-# Conversión MB a GB
+# Conversión de MB a GB
 monthly_internet['total_gb'] = monthly_internet['total_mb'] / 1024
 
+
 # -------------------------------
-# Unión de todas las métricas
+# Unión de los datasets
 # -------------------------------
 monthly_usage = (
     monthly_calls
     .merge(monthly_messages, on=['user_id', 'month'], how='outer')
-    .merge(monthly_internet[['user_id', 'month', 'total_gb']], on=['user_id', 'month'], how='outer')
+    .merge(
+        monthly_internet[['user_id', 'month', 'total_gb']],
+        on=['user_id', 'month'],
+        how='outer'
+    )
+    .fillna(0)
 )
-
-monthly_usage = monthly_usage.fillna(0)
 
 monthly_usage = (
     monthly_usage
     .merge(megaline_users[['user_id', 'plan']], on='user_id', how='left')
     .merge(megaline_plans, on='plan', how='left')
 )
+
 
 # -------------------------------
 # Cálculo de ingresos mensuales
@@ -126,51 +117,72 @@ monthly_usage['extra_gb'] = np.maximum(
     np.ceil(monthly_usage['total_gb'] - monthly_usage['gb_included'])
 )
 
-monthly_usage['revenue'] = (
-    monthly_usage['usd_monthly_fee'] +
-    monthly_usage['extra_minutes'] * monthly_usage['usd_per_minute'] +
-    monthly_usage['extra_messages'] * monthly_usage['usd_per_message'] +
-    monthly_usage['extra_gb'] * monthly_usage['usd_per_gb']
+monthly_usage['monthly_revenue'] = (
+    monthly_usage['usd_monthly_fee']
+    + monthly_usage['extra_minutes'] * monthly_usage['usd_per_minute']
+    + monthly_usage['extra_messages'] * monthly_usage['usd_per_message']
+    + monthly_usage['extra_gb'] * monthly_usage['usd_per_gb']
 )
 
-# -------------------------------
-# Análisis exploratorio
-# -------------------------------
-sns.histplot(data=monthly_usage, x='revenue', hue='plan', bins=30, kde=True)
-plt.title('Distribución de ingresos mensuales por plan')
-plt.xlabel('Ingresos (USD)')
-plt.ylabel('Frecuencia')
-plt.show()
+
+# ============================================================
+# VISUALIZACIONES (NO EJECUTADAS AQUÍ)
+# ============================================================
+# Las siguientes gráficas fueron generadas en TripleTen y
+# se encuentran guardadas como imágenes en la carpeta /figures:
+#
+# 1. figures/ingresos_por_plan.png
+#    Distribución de ingresos mensuales por plan
+#
+# 2. figures/minutos_por_plan.png
+#    Consumo de minutos mensuales por plan
+#
+# 3. figures/gb_por_plan.png
+#    Consumo de datos (GB) por plan
+#
+# 4. figures/mensajes_por_plan.png
+#    Cantidad de mensajes enviados por plan
+# ============================================================
+
 
 # -------------------------------
-# Comparación estadística
+# Análisis estadístico
 # -------------------------------
-revenue_surf = monthly_usage.loc[monthly_usage['plan'] == 'surf', 'revenue']
-revenue_ultimate = monthly_usage.loc[monthly_usage['plan'] == 'ultimate', 'revenue']
+surf_revenue = monthly_usage.loc[
+    monthly_usage['plan'] == 'surf',
+    'monthly_revenue'
+]
+
+ultimate_revenue = monthly_usage.loc[
+    monthly_usage['plan'] == 'ultimate',
+    'monthly_revenue'
+]
 
 alpha = 0.05
 
-results = st.ttest_ind(
-    revenue_surf,
-    revenue_ultimate,
+t_test_result = st.ttest_ind(
+    surf_revenue,
+    ultimate_revenue,
     equal_var=False
 )
 
-print('Valor p:', results.pvalue)
+t_test_result
 
-if results.pvalue < alpha:
-    print('Se rechaza la hipótesis nula: los ingresos promedio difieren entre planes.')
-else:
-    print('No se puede rechazar la hipótesis nula: no hay evidencia suficiente de diferencia.')
 
 # -------------------------------
 # Conclusión
 # -------------------------------
-print("""
-Conclusión:
-El análisis muestra diferencias relevantes en los ingresos mensuales entre
-los planes Surf y Ultimate. El uso de servicios adicionales impacta de forma
-diferente según el plan contratado, lo cual puede ser utilizado por la empresa
-para optimizar precios y estrategias comerciales.
-""")
+"""
+CONCLUSIÓN:
+
+El análisis muestra que el plan Ultimate genera ingresos mensuales
+promedio más altos en comparación con el plan Surf.
+
+El plan Surf presenta una mayor variabilidad en ingresos, impulsada
+por cargos adicionales por excedentes, mientras que Ultimate ofrece
+ingresos más estables y predecibles.
+
+Estos resultados pueden ayudar a Megaline a optimizar su estrategia
+comercial y de precios según el perfil de sus clientes.
+"""
 
